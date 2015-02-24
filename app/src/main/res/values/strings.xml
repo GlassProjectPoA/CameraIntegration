@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">Camera Integration</string>
+
+    <!--RANDOM-->
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_color_editing">ColorEditing</string>
+    <string name="captured_image">Captured image</string>
+
+    <!--BUTTONS-->
+    <string name="button_take_picture">Take Picture!</string>
+    <string name="button_query_cameras">Query Cameras</string>
+    <string name="button_red">Redify!</string>
+    <string name="button_green">Greenify!</string>
+    <string name="button_blue">Bluefy!</string>
+    <string name="button_scaled">Scaled Down Image</string>
+    <string name="button_original">Original Size Image</string>
+
+</resources>
