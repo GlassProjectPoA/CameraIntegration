@@ -1,11 +1,13 @@
 package com.tryout.cameraintegration;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -13,6 +15,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
 import java.io.File;
@@ -34,6 +37,10 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        if(Build.VERSION_CODES.LOLLIPOP > Build.VERSION.SDK_INT){
+            Button btn = (Button) findViewById(R.id.button2);
+            btn.setEnabled(false);
+        }
     }
 
 
@@ -58,6 +65,9 @@ public class MainActivity extends Activity {
     }
 
     // Checks which cameras can actually be used by the device and shows in a list
+    // It's actually using latest api only, so it's disabled for phones not using LOLLIPOP
+    // Everything else workds fine.
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     public void queryCameras(View view) throws CameraAccessException {
         TextView tv = (TextView) findViewById(R.id.textView);
         CameraManager mManager;
