@@ -12,30 +12,11 @@
 
         <Button
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/button_red"
+            android:layout_height="fill_parent"
+            android:text="Detection"
             android:onClick="decideColors"
-            android:id="@+id/button_red"
-            android:layout_weight="1"
-            android:textColor="#ffff4444" />
-
-        <Button
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/button_green"
-            android:onClick="decideColors"
-            android:id="@+id/button_green"
-            android:layout_weight="1"
-            android:textColor="#ff99cc00" />
-
-        <Button
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/button_blue"
-            android:onClick="decideColors"
-            android:id="@+id/button_blue"
-            android:layout_weight="1"
-            android:textColor="#ff33b5e5" />
+            android:id="@+id/button_detection"
+            android:layout_weight="1"/>
     </LinearLayout>
 
     <ImageView

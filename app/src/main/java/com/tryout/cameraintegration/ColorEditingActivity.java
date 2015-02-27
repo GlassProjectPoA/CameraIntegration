@@ -11,11 +11,28 @@ import android.os.Environment;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
+
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 
 public class ColorEditingActivity extends Activity {
@@ -24,6 +41,31 @@ public class ColorEditingActivity extends Activity {
     private ImageView iv;
     private File mediaFile;
     private String writeBmp;
+    private Scalar color = new Scalar (100, 100, 255);
+
+    // load openCV stuff *OpenCV manager must be installed*
+    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
+        @Override
+        public void onManagerConnected(int status) {
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS:
+                {
+                } break;
+                default:
+                {
+                    super.onManagerConnected(status);
+                } break;
+            }
+        }
+    };
+
+    // load more openCV stuff
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this, mLoaderCallback);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,21 +88,17 @@ public class ColorEditingActivity extends Activity {
 
         // Show bitmap on imageView2
         iv = (ImageView) findViewById(R.id.imageView2);
+        mBitmap.prepareToDraw();
         iv.setImageBitmap(mBitmap);
+        iv.postInvalidate();
         //Log.d("BITMAP", "Is mutable: "+ mBitmap.isMutable());
     }
 
     // Just to know which button was pressed based on their IDs, calls scanColors(int)
     public void decideColors(View v){
         switch(v.getId()){
-            case(R.id.button_red):
-                    scanColors(Color.RED);
-                break;
-            case(R.id.button_green):
-                    scanColors(Color.GREEN);
-                break;
-            case(R.id.button_blue):
-                    scanColors(Color.BLUE);
+            case(R.id.button_detection):
+                detectShape(scaleDown(mBitmap, 0.1f, true));
                 break;
         }
     }
@@ -88,69 +126,6 @@ public class ColorEditingActivity extends Activity {
         return Bitmap.createScaledBitmap(realImage, width, height, filter);
     }
 
-    //Process colors, the int parameter is used to decide which button was pressed based on its color.
-    private void scanColors(int mColor) {
-        // To turn off, change to 0
-        float sat = 0.1f;
-        // To turn off, change to 1
-        float val = 0.9f;
-
-        Bitmap scaledBitmap = scaleDown(mBitmap, 0.1f, true);
-
-        // Iterates over every pixel on scaledBitmap
-        for (int y = 0; y < scaledBitmap.getHeight(); y++) {
-            for (int x = 0; x < scaledBitmap.getWidth(); x++) {
-                // Gets pixel[x,y] color and turns it into HSV, which is better to compare colors.
-                int clr = scaledBitmap.getPixel(x,y);
-                float[] hsv = new float[3];
-                Color.colorToHSV(clr, hsv);
-                switch(mColor){
-                    /*
-                    COLOR HUE CODES
-                    red >= 0 && <=10
-                        =>340 && <=359
-                    green = >=70 && <= 155
-                    blue = >= 180 && <= 260
-                     */
-                    case(Color.RED):
-                        if (hsv[0] >= 0 && hsv[0] <=20 && hsv[1] >= sat && hsv[2] <= val){
-                            clr = Color.rgb(255, 0, 0);
-                        }else if(hsv[0] >= 340 && hsv[0] <= 359 && hsv[1] >= sat && hsv[2] <= val){
-                            clr = Color.rgb(255, 0, 0);
-                        }else{
-                            clr = Color.rgb(0, 0, 0);
-                        }
-                        scaledBitmap.setPixel(x, y, clr);
-                        break;
-                    case(Color.GREEN):
-                        if (hsv[0] >= 70 && hsv[0] <=155 && hsv[1] >= sat && hsv[2] <= val){
-
-                            clr = Color.rgb(0, 255, 0);
-                        }else{
-                            clr = Color.rgb(0, 0, 0);
-                        }
-                        scaledBitmap.setPixel(x, y, clr);
-                        break;
-                    case(Color.BLUE):
-                        //Log.d("COLORS", "H: ""S: ""V: ")
-                        if (hsv[0] >= 180 && hsv[0] <=260 && hsv[1] >= sat && hsv[2] <= val){
-
-                            clr = Color.rgb(0, 0, 255);
-                        }else{
-                            clr = Color.rgb(0, 0, 0);
-                        }
-                        scaledBitmap.setPixel(x, y, clr);
-                        break;
-                }
-            }
-        }
-        scaledBitmap.prepareToDraw();
-        iv.setImageBitmap(scaledBitmap);
-        iv.postInvalidate();
-        savePNG(mColor, scaledBitmap);
-    }
-
-
     // Saves as PNG, used to test the output. Variable "randomName" is just used in the filename, can be any int.
     public void savePNG(int randomName, Bitmap bmpToSave){
         FileOutputStream out = null;
@@ -173,6 +148,45 @@ public class ColorEditingActivity extends Activity {
                 e.printStackTrace();
             }
         }
+    }
+
+    public void detectShape(Bitmap scaled) {
+        Mat rgba = new Mat();
+        ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        Mat hierarchy = new Mat();
+        Utils.bitmapToMat(scaled, rgba);
+
+        // convert image to grayscale
+        Imgproc.cvtColor(rgba, rgba, Imgproc.COLOR_RGBA2GRAY, 4);
+
+        // Convert to binary image
+        int maxThreshold = 255;
+        int threshold = 70;
+        Imgproc.threshold(rgba, rgba, threshold, maxThreshold, Imgproc.THRESH_BINARY);
+
+        // denoise the image
+        Mat erode = Imgproc.getStructuringElement(Imgproc.MORPH_ERODE, new Size(9, 9));
+        Imgproc.erode(rgba, rgba, erode);
+        Mat dilate = Imgproc.getStructuringElement(Imgproc.MORPH_DILATE, new Size(9, 9));
+        Imgproc.dilate(rgba, rgba, dilate);
+
+        Imgproc.findContours(rgba, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+
+        Button button = (Button)findViewById(R.id.button_detection);
+        button.setText(String.valueOf(contours.size()));
+
+        // iterate over all the objects
+        for (int i = 0; i < contours.size(); i++)
+        {
+            // negative value will fill the shape, otherwise it will be the line thickness
+            Imgproc.drawContours(rgba, contours, i, color, -1);
+        }
+
+        Utils.matToBitmap(rgba, scaled);
+        scaled.prepareToDraw();
+        iv.setImageBitmap(scaled);
+        iv.postInvalidate();
+
     }
 
     @Override

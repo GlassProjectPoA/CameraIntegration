@@ -37,18 +37,6 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        if(Build.VERSION_CODES.LOLLIPOP > Build.VERSION.SDK_INT){
-            Button btn = (Button) findViewById(R.id.button2);
-            btn.setEnabled(false);
-        }
-    }
-
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
     }
 
     public void takePicture(View view) {
@@ -61,7 +49,6 @@ public class MainActivity extends Activity {
         // start the image capture Intent
         startActivityForResult(intent, CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE);
         //Log.d("INFO", fileUri.toString());
-
     }
 
     // Checks which cameras can actually be used by the device and shows in a list
@@ -77,15 +64,14 @@ public class MainActivity extends Activity {
         mNumberOfTries++;
         tv.append("\n{Try N: "+mNumberOfTries+" }\n");
         for (String ids : mCameraIds){
-        //for (int i = 0; i < mCameraIds.length; i++){
+            //for (int i = 0; i < mCameraIds.length; i++){
             tv.append(ids+"\n");
         }
 
     }
 
     /* Listen for when the Camera application finished taking and handling the picture
-        then starts the ColorEditing Activity
-     */
+        then starts the ColorEditing Activity  */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
@@ -103,7 +89,7 @@ public class MainActivity extends Activity {
         return Uri.fromFile(getOutputMediaFile(type));
     }
 
-    /** Create a File for saving an image or video */
+    /* Create a File for saving an image or video */
     private static File getOutputMediaFile(int type){
         // To be safe, you should check that the SDCard is mounted
         // using Environment.getExternalStorageState() before doing this.
@@ -153,6 +139,10 @@ public class MainActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
 
-
-
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
 }
