@@ -11,9 +11,9 @@
         android:layout_height="wrap_content">
 
         <Button
-            android:layout_width="fill_parent"
+            android:layout_width="0dp"
             android:layout_height="fill_parent"
-            android:text="Detection"
+            android:text="@string/button_detection"
             android:onClick="decideColors"
             android:id="@+id/button_detection"
             android:layout_weight="1"/>

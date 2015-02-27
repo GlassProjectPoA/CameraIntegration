@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -43,30 +44,6 @@ public class ColorEditingActivity extends Activity {
     private String writeBmp;
     private Scalar color = new Scalar (100, 100, 255);
 
-    // load openCV stuff *OpenCV manager must be installed*
-    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
-        @Override
-        public void onManagerConnected(int status) {
-            switch (status) {
-                case LoaderCallbackInterface.SUCCESS:
-                {
-                } break;
-                default:
-                {
-                    super.onManagerConnected(status);
-                } break;
-            }
-        }
-    };
-
-    // load more openCV stuff
-    @Override
-    public void onResume()
-    {
-        super.onResume();
-        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this, mLoaderCallback);
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -85,13 +62,18 @@ public class ColorEditingActivity extends Activity {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inMutable = true;
         mBitmap = BitmapFactory.decodeFile(fileUri.getPath(), options);
-
         // Show bitmap on imageView2
         iv = (ImageView) findViewById(R.id.imageView2);
-        mBitmap.prepareToDraw();
         iv.setImageBitmap(mBitmap);
         iv.postInvalidate();
-        //Log.d("BITMAP", "Is mutable: "+ mBitmap.isMutable());
+    }
+
+    // load more openCV stuff
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_3, this, mLoaderCallback);
     }
 
     // Just to know which button was pressed based on their IDs, calls scanColors(int)
@@ -149,6 +131,22 @@ public class ColorEditingActivity extends Activity {
             }
         }
     }
+
+    // load openCV stuff *OpenCV manager must be installed*
+    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
+        @Override
+        public void onManagerConnected(int status) {
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS:
+                {
+                } break;
+                default:
+                {
+                    super.onManagerConnected(status);
+                } break;
+            }
+        }
+    };
 
     public void detectShape(Bitmap scaled) {
         Mat rgba = new Mat();

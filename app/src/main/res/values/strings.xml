@@ -14,5 +14,6 @@
     <string name="button_blue">Bluefy!</string>
     <string name="button_scaled">Scaled Down Image</string>
     <string name="button_original">Original Size Image</string>
+    <string name="button_detection">Detection</string>
 
 </resources>

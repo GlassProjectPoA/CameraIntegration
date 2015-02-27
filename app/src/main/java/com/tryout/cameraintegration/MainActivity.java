@@ -4,6 +4,7 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraManager;
 import android.net.Uri;
@@ -37,6 +38,22 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        final String appPackageName = "org.opencv.engine";
+        boolean installed  =   appInstalledOrNot("org.opencv.engine");
+        Log.d("AGAIN...", "Been here 1");
+        if(!installed) {
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + appPackageName)));
+            } catch (android.content.ActivityNotFoundException anfe) {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" + appPackageName)));
+            }
+        }
+
+        if(Build.VERSION_CODES.LOLLIPOP > Build.VERSION.SDK_INT){
+            Button btn = (Button) findViewById(R.id.button2);
+            btn.setEnabled(false);
+        }
     }
 
     public void takePicture(View view) {
@@ -48,7 +65,6 @@ public class MainActivity extends Activity {
 
         // start the image capture Intent
         startActivityForResult(intent, CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE);
-        //Log.d("INFO", fileUri.toString());
     }
 
     // Checks which cameras can actually be used by the device and shows in a list
@@ -64,7 +80,6 @@ public class MainActivity extends Activity {
         mNumberOfTries++;
         tv.append("\n{Try N: "+mNumberOfTries+" }\n");
         for (String ids : mCameraIds){
-            //for (int i = 0; i < mCameraIds.length; i++){
             tv.append(ids+"\n");
         }
 
@@ -83,6 +98,19 @@ public class MainActivity extends Activity {
                     startActivity(intent2);
             }
         }
+    }
+
+    private boolean appInstalledOrNot(String uri) {
+        PackageManager pm = getPackageManager();
+        boolean app_installed = false;
+        try {
+            pm.getPackageInfo(uri, PackageManager.GET_ACTIVITIES);
+            app_installed = true;
+        }
+        catch (PackageManager.NameNotFoundException e) {
+            app_installed = false;
+        }
+        return app_installed ;
     }
 
     private static Uri getOutputMediaFileUri(int type){
