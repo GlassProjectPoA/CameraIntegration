@@ -160,7 +160,7 @@ public class ColorEditingActivity extends Activity {
         // Convert to binary image
         int maxThreshold = 255;
         int threshold = 70;
-        Imgproc.threshold(rgba, rgba, threshold, maxThreshold, Imgproc.THRESH_BINARY);
+        Imgproc.threshold(rgba, rgba, threshold, maxThreshold, Imgproc.THRESH_BINARY_INV);
 
         // denoise the image
         Mat erode = Imgproc.getStructuringElement(Imgproc.MORPH_ERODE, new Size(9, 9));
