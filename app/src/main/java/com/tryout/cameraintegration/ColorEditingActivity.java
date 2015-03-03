@@ -155,6 +155,8 @@ public class ColorEditingActivity extends Activity {
         int cntTriangles = 0;
         int cntSquares = 0;
         int cntCircles = 0;
+        int maxThreshold = 255;
+        int threshold = 90;
         ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
         Utils.bitmapToMat(scaled, rgba);
 
@@ -162,18 +164,19 @@ public class ColorEditingActivity extends Activity {
         Imgproc.cvtColor(rgba, gray, Imgproc.COLOR_RGBA2GRAY, 4);
 
         // Convert to binary image
-        int maxThreshold = 255;
-        int threshold = 90;
         Imgproc.threshold(gray, gray, threshold, maxThreshold, Imgproc.THRESH_BINARY_INV);
 
         // find circles
         Imgproc.GaussianBlur(gray, blur, new Size(9, 9), 4, 4);
         Imgproc.HoughCircles(blur, circles, Imgproc.CV_HOUGH_GRADIENT, 2.0, 100);
+
+        // iterate over circles
         for (int i = 0; i < Math.min(circles.cols(), 10); i++) {
-            cntCircles++;
             double vCircle[] = circles.get(0, i);
             Point pt = new Point();
             int radius;
+
+            cntCircles++;
 
             if (vCircle == null) {
                 break;
@@ -183,6 +186,7 @@ public class ColorEditingActivity extends Activity {
             pt.y = Math.round(vCircle[1]);
             radius = (int) Math.round(vCircle[2]);
 
+            // draw circle around detected circle
             Core.circle(rgba, pt, radius, new Scalar(0, 0, 255), 2);
         }
 
@@ -223,7 +227,7 @@ public class ColorEditingActivity extends Activity {
         // add number of squares, triangles and circles to the image
         Core.putText(rgba, ("squares: " + String.valueOf(cntSquares) +
                 ", triangles: " + String.valueOf(cntTriangles) +
-                ", circles: " + String.valueOf(cntCircles)), new Point(10, 30), 0, 0.8, color);
+                ", circles: " + String.valueOf(cntCircles)), new Point(10, 30), 0, 1, color);
 
         // show the image
         Utils.matToBitmap(rgba, scaled);
