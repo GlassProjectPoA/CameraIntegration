@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -19,10 +18,11 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
-import org.opencv.core.CvType;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
@@ -32,9 +32,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 
 public class ColorEditingActivity extends Activity {
 
@@ -42,7 +39,8 @@ public class ColorEditingActivity extends Activity {
     private ImageView iv;
     private File mediaFile;
     private String writeBmp;
-    private Scalar color = new Scalar (100, 100, 255);
+    private Scalar color = new Scalar (0, 255, 0);
+    private String mFileName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +49,7 @@ public class ColorEditingActivity extends Activity {
 
         // Retrieves saved file path/name
         Intent intent = getIntent();
-        String mFileName = intent.getStringExtra(MainActivity.EXTRA_FILE_NAME);
+        mFileName = intent.getStringExtra(MainActivity.EXTRA_FILE_NAME);
         File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_PICTURES), "/CameraIntegration");
         mediaFile = new File(mediaStorageDir.getPath() + File.separator +
@@ -150,36 +148,58 @@ public class ColorEditingActivity extends Activity {
 
     public void detectShape(Bitmap scaled) {
         Mat rgba = new Mat();
-        ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        Mat gray = new Mat();
         Mat hierarchy = new Mat();
+        Mat circles = new Mat();
+        ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
         Utils.bitmapToMat(scaled, rgba);
 
         // convert image to grayscale
-        Imgproc.cvtColor(rgba, rgba, Imgproc.COLOR_RGBA2GRAY, 4);
+        Imgproc.cvtColor(rgba, gray, Imgproc.COLOR_RGBA2GRAY, 4);
 
         // Convert to binary image
         int maxThreshold = 255;
-        int threshold = 70;
-        Imgproc.threshold(rgba, rgba, threshold, maxThreshold, Imgproc.THRESH_BINARY);
+        int threshold = 100;
+        Imgproc.threshold(gray, gray, threshold, maxThreshold, Imgproc.THRESH_BINARY);
 
         // denoise the image
         Mat erode = Imgproc.getStructuringElement(Imgproc.MORPH_ERODE, new Size(9, 9));
-        Imgproc.erode(rgba, rgba, erode);
+        Imgproc.erode(gray, gray, erode);
         Mat dilate = Imgproc.getStructuringElement(Imgproc.MORPH_DILATE, new Size(9, 9));
-        Imgproc.dilate(rgba, rgba, dilate);
+        Imgproc.dilate(gray, gray, dilate);
+        Imgproc.dilate(gray, gray, dilate);
 
-        Imgproc.findContours(rgba, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
 
-        Button button = (Button)findViewById(R.id.button_detection);
-        button.setText(String.valueOf(contours.size()));
+        Imgproc.findContours(gray, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+
+        // find circles
+        // todo blur the picture just for the circles
+        Imgproc.HoughCircles(gray, circles, Imgproc.CV_HOUGH_GRADIENT, 2, 10, 100, 100, 0, 0);
 
         // iterate over all the objects
+        // todo remove close points
+        MatOfPoint2f approxCurve = new MatOfPoint2f();
         for (int i = 0; i < contours.size(); i++)
         {
-            // negative value will fill the shape, otherwise it will be the line thickness
-            Imgproc.drawContours(rgba, contours, i, color, -1);
+            MatOfPoint2f contour2f = new MatOfPoint2f(contours.get(i).toArray());
+            double approxDistance = Imgproc.arcLength(contour2f, true) * 0.02;
+            Imgproc.approxPolyDP(contour2f, approxCurve, approxDistance, true);
+
+            MatOfPoint points = new MatOfPoint(approxCurve.toArray());
+
+            // square
+            if (points.total() == 4) {
+                Rect rect = Imgproc.boundingRect(points);
+                Core.rectangle(rgba, new Point(rect.x, rect.y), new Point(rect.x+rect.width, rect.y+rect.height), color, 2);
+            }
+            // triangle
+            else if (points.total() == 3) {
+                Rect rect = Imgproc.boundingRect(points);
+                Core.rectangle(rgba, new Point(rect.x, rect.y), new Point(rect.x+rect.width, rect.y+rect.height), new Scalar(255, 0 , 0), 2);
+            }
         }
 
+        // show the image
         Utils.matToBitmap(rgba, scaled);
         scaled.prepareToDraw();
         iv.setImageBitmap(scaled);
