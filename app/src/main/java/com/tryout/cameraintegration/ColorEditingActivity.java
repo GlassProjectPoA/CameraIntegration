@@ -78,7 +78,7 @@ public class ColorEditingActivity extends Activity {
     public void decideColors(View v){
         switch(v.getId()){
             case(R.id.button_detection):
-                detectShape(scaleDown(mBitmap, 0.1f, true));
+                detectShape(scaleDown(mBitmap, 0.3f, true));
                 break;
         }
     }
@@ -151,6 +151,10 @@ public class ColorEditingActivity extends Activity {
         Mat gray = new Mat();
         Mat hierarchy = new Mat();
         Mat circles = new Mat();
+        Mat blur = new Mat();
+        int cntTriangles = 0;
+        int cntSquares = 0;
+        int cntCircles = 0;
         ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
         Utils.bitmapToMat(scaled, rgba);
 
@@ -159,8 +163,28 @@ public class ColorEditingActivity extends Activity {
 
         // Convert to binary image
         int maxThreshold = 255;
-        int threshold = 100;
-        Imgproc.threshold(gray, gray, threshold, maxThreshold, Imgproc.THRESH_BINARY);
+        int threshold = 90;
+        Imgproc.threshold(gray, gray, threshold, maxThreshold, Imgproc.THRESH_BINARY_INV);
+
+        // find circles
+        Imgproc.GaussianBlur(gray, blur, new Size(9, 9), 4, 4);
+        Imgproc.HoughCircles(blur, circles, Imgproc.CV_HOUGH_GRADIENT, 2.0, 100);
+        for (int i = 0; i < Math.min(circles.cols(), 10); i++) {
+            cntCircles++;
+            double vCircle[] = circles.get(0, i);
+            Point pt = new Point();
+            int radius;
+
+            if (vCircle == null) {
+                break;
+            }
+
+            pt.x = Math.round(vCircle[0]);
+            pt.y = Math.round(vCircle[1]);
+            radius = (int) Math.round(vCircle[2]);
+
+            Core.circle(rgba, pt, radius, new Scalar(0, 0, 255), 2);
+        }
 
         // denoise the image
         Mat erode = Imgproc.getStructuringElement(Imgproc.MORPH_ERODE, new Size(9, 9));
@@ -169,12 +193,8 @@ public class ColorEditingActivity extends Activity {
         Imgproc.dilate(gray, gray, dilate);
         Imgproc.dilate(gray, gray, dilate);
 
-
+        //find contours
         Imgproc.findContours(gray, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
-
-        // find circles
-        // todo blur the picture just for the circles
-        Imgproc.HoughCircles(gray, circles, Imgproc.CV_HOUGH_GRADIENT, 2, 10, 100, 100, 0, 0);
 
         // iterate over all the objects
         // todo remove close points
@@ -184,20 +204,26 @@ public class ColorEditingActivity extends Activity {
             MatOfPoint2f contour2f = new MatOfPoint2f(contours.get(i).toArray());
             double approxDistance = Imgproc.arcLength(contour2f, true) * 0.02;
             Imgproc.approxPolyDP(contour2f, approxCurve, approxDistance, true);
-
             MatOfPoint points = new MatOfPoint(approxCurve.toArray());
 
             // square
             if (points.total() == 4) {
+                cntSquares++;
                 Rect rect = Imgproc.boundingRect(points);
                 Core.rectangle(rgba, new Point(rect.x, rect.y), new Point(rect.x+rect.width, rect.y+rect.height), color, 2);
             }
             // triangle
             else if (points.total() == 3) {
+                cntTriangles++;
                 Rect rect = Imgproc.boundingRect(points);
                 Core.rectangle(rgba, new Point(rect.x, rect.y), new Point(rect.x+rect.width, rect.y+rect.height), new Scalar(255, 0 , 0), 2);
             }
         }
+
+        // add number of squares, triangles and circles to the image
+        Core.putText(rgba, ("squares: " + String.valueOf(cntSquares) +
+                ", triangles: " + String.valueOf(cntTriangles) +
+                ", circles: " + String.valueOf(cntCircles)), new Point(10, 30), 0, 0.8, color);
 
         // show the image
         Utils.matToBitmap(rgba, scaled);
