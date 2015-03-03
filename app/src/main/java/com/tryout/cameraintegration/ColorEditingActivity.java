@@ -7,7 +7,6 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -39,8 +38,11 @@ public class ColorEditingActivity extends Activity {
     private ImageView iv;
     private File mediaFile;
     private String writeBmp;
-    private Scalar color = new Scalar (0, 255, 0);
     private String mFileName;
+    private Scalar mRed = new Scalar(255, 0, 0);
+    private Scalar mGreen = new Scalar(0, 255, 0);
+    private Scalar mBlue = new Scalar(0, 0, 255);
+    private int thickness = 3;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -187,7 +189,7 @@ public class ColorEditingActivity extends Activity {
             radius = (int) Math.round(vCircle[2]);
 
             // draw circle around detected circle
-            Core.circle(rgba, pt, radius, new Scalar(0, 0, 255), 2);
+            Core.circle(rgba, pt, radius, mBlue, thickness);
         }
 
         // denoise the image
@@ -214,20 +216,20 @@ public class ColorEditingActivity extends Activity {
             if (points.total() == 4) {
                 cntSquares++;
                 Rect rect = Imgproc.boundingRect(points);
-                Core.rectangle(rgba, new Point(rect.x, rect.y), new Point(rect.x+rect.width, rect.y+rect.height), color, 2);
+                Core.rectangle(rgba, new Point(rect.x, rect.y), new Point(rect.x+rect.width, rect.y+rect.height), mGreen, thickness);
             }
             // triangle
             else if (points.total() == 3) {
                 cntTriangles++;
                 Rect rect = Imgproc.boundingRect(points);
-                Core.rectangle(rgba, new Point(rect.x, rect.y), new Point(rect.x+rect.width, rect.y+rect.height), new Scalar(255, 0 , 0), 2);
+                Core.rectangle(rgba, new Point(rect.x, rect.y), new Point(rect.x+rect.width, rect.y+rect.height), mRed, thickness);
             }
         }
 
         // add number of squares, triangles and circles to the image
         Core.putText(rgba, ("squares: " + String.valueOf(cntSquares) +
                 ", triangles: " + String.valueOf(cntTriangles) +
-                ", circles: " + String.valueOf(cntCircles)), new Point(10, 30), 0, 1, color);
+                ", circles: " + String.valueOf(cntCircles)), new Point(10, 30), 0, 1.2, mGreen);
 
         // show the image
         Utils.matToBitmap(rgba, scaled);
